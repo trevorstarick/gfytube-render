@@ -1,0 +1,18 @@
+[submodule "deps/cpr"]
+	path = deps/cpr
+	url = https://github.com/whoshuu/cpr.git
+[submodule "deps/FFmpeg"]
+	path = deps/FFmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
+[submodule "deps/tinyxml2"]
+	path = deps/tinyxml2
+	url = https://github.com/leethomason/tinyxml2.git
+[submodule "deps/libdash"]
+	path = deps/libdash
+	url = https://github.com/bitmovin/libdash.git
+[submodule "deps/duktape"]
+	path = deps/duktape
+	url = https://github.com/svaarala/duktape.git
+[submodule "deps/v7"]
+	path = deps/v7
+	url = https://github.com/cesanta/v7.git
