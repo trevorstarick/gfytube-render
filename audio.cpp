@@ -74,7 +74,7 @@ void Audio::download(std::string id) {
     }
 
     if(paramsHash["ptk"] == "vevo") {
-        std::cout << "fuck" << "\n";
+        std::cout << "woof" << "\n";
         std::string cmd = "youtube-dl -f 140";
         cmd += " -o " + pwd + id + ".mp4";
         cmd += " https://www.youtube.com/watch?v=";
