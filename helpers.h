@@ -21,6 +21,10 @@ public:
     ~Helpers();
     std::string exec(const char* cmd);
     std::vector<std::string> split(const std::string& input, const std::string& regex);
+    std::string replace(const std::string& input, const std::string& regex, const std::string& replace);
+    std::string mergeAV(std::string start, std::string audio, std::string video);
+    float getMediaLength(std::string filename);
+    void init();
 private:
     CURL *curl = curl_easy_init();
 };

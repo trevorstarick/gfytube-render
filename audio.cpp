@@ -7,26 +7,21 @@
 Audio::Audio() {};
 Audio::~Audio() {};
 
-void Audio::download(std::string id) {
+std::string Audio::download(std::string id) {
     // todo: check if data/{{id}}.mp4 exists
     // todo: check for 404's
 
     struct stat buffer;
-    auto name = pwd + id + ".mp4";
+    auto name = pwd + "audio/" + id + ".m4a";
 
     if(stat (name.c_str(), &buffer) == 0) {
-        std::cout << "old " << name << "\n";
-        return;
-    } else {
-        std::cout << "new " << name << "\n";
+        return "";
     }
 
     long sts = 0;
 
     std::string response, player, signature;
     std::string url = "https://www.youtube.com/watch?v="+id+"&gl=US&hl=en&has_verified=1&bpctr=9999999999";
-
-    std::cout << url << "\n";
 
     auto r = cpr::Get(cpr::Url(url));
 
@@ -61,53 +56,45 @@ void Audio::download(std::string id) {
     }
 
     if(paramsHash.find("errorcode") != paramsHash.end()) {
-        std::cerr << "Error " + paramsHash["errorcode"]  <<  ": " << paramsHash["reason"] << "\n";
-        return;
+        std::string err = "Error " + paramsHash["errorcode"]  +  ": " + paramsHash["reason"];
+        return err;
     }
 
 
     // todo: download clips of youtube audio or download most popular 10h sonds
 
     if(std::stoi(paramsHash["length_seconds"]) > 3600) {
-        std::cerr << "Error length_seconds: " << paramsHash["length_seconds"] << "\n";
-        return;
+        std::string err = "Error length_seconds: " + paramsHash["length_seconds"];
+        return err;
     }
 
     if(paramsHash["ptk"] == "vevo") {
-        std::cout << "fuck" << "\n";
         std::string cmd = "youtube-dl -f 140";
-        cmd += " -o " + pwd + id + ".mp4";
+        cmd += " -o " + pwd + "audio/" + id + ".m4a";
         cmd += " https://www.youtube.com/watch?v=";
         cmd += id;
 
-        std::cout << cmd << "\n";
-
         auto i = exec(cmd.c_str());
-        std::cout << i << "\n";
-        return;
+
+        return "";
     } else {
         url = curl_easy_unescape(curl, paramsHash["dashmpd"].c_str(), 0, 0);
     }
 
     r = cpr::Get(cpr::Url(url));
 
-    std::cout << r.status_code << "\n";
-
     if(r.status_code == 403) {
-        std::cout << "fuck" << "\n";
         std::string cmd = "youtube-dl -f 140";
-        cmd += " -o " + pwd + id + ".mp4";
+        cmd += " -o " + pwd + "audio/" + id + ".m4a";
         cmd += " https://www.youtube.com/watch?v=";
         cmd += id;
 
-        std::cout << cmd << "\n";
-
         auto i = exec(cmd.c_str());
-        std::cout << i << "\n";
-        return;
+
+        return "";
     } else if(r.status_code != 200) {
         std::cerr << "Error r" << r.status_code  <<  ": " << url << "\n";
-        return;
+        return std::to_string(r.status_code);
     }
 
     rapidxml::xml_document<> doc;
@@ -146,21 +133,24 @@ void Audio::download(std::string id) {
     r = cpr::Get(cpr::Url(url));
 
     std::ofstream audio;
-    audio.open(pwd + id + ".mp4");
+    audio.open(pwd + "audio/" + id + ".m4a");
     audio << r.text;
     audio.close();
+
+    return "";
 }
 
-void Audio::convert(std::string filename) {
+std::string Audio::convertToAac(std::string filename) {
     std::string path = pwd + filename;
     std::string name = split(filename, "\\.")[0];
 
     std::vector<std::string> args = {
             "-y",
+            "-v", "error",
             "-i", path,
-            "-codec:a", "libmp3lame",
-            "-qscale:a", "2",
-            pwd + "audio/" + name + ".mp3"
+            "-c:a", "libfdk_aac",
+            "-b:a", "320k",
+            pwd + "audio/" + name + ".m4a"
     };
 
     std::string argsString = "";
@@ -170,19 +160,48 @@ void Audio::convert(std::string filename) {
         argsString += x;
     }
 
-    std::cout << argsString << "\n";
+    std::string cmd = "ffmpeg";
+    cmd += argsString;
+
+    exec(cmd.c_str());
+
+    return "";
+}
+
+std::string Audio::convert(std::string filename) {
+
+    std::thread t1(&Audio::convertToAac, this, filename);
+//    std::thread t2(&Audio::convertToOpus, this, filename);
+
+    t1.join();
+//    t2.join();
+
+    return "";
+}
+
+std::string Audio::seek(std::string filename, std::string seek) {
+    std::string path = pwd + "audio/" + filename + ".m4a";
+    std::string name = filename;
+
+    std::vector<std::string> args = {
+            "-y",
+            "-v", "error",
+            "-i", path,
+            "-ss", seek,
+            pwd + "tmp/" + name + ".m4a"
+    };
+
+    std::string argsString = "";
+
+    for(auto x:args) {
+        argsString += " ";
+        argsString += x;
+    }
 
     std::string cmd = "ffmpeg";
     cmd += argsString;
 
     exec(cmd.c_str());
-}
 
-void Audio::extractMetadata(std::string filename) {
-    std::string name = split(filename, "\\.")[0];
-
-    std::string cmd = "ffmpeg -i " + filename + " 2>&1 | grep Duration | awk '{print $2}' | tr -d ,";
-    cmd += " >> " + pwd + "metadata/" + name + ".meta";
-
-    exec(cmd.c_str());
-}
+    return "";
+};

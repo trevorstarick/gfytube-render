@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(gfytube_render)
+project(gfytube-cli)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -11,9 +11,9 @@ set(SOURCE_FILES ${SOURCE_FILES} audio.cpp audio.h video.cpp video.h helpers.cpp
 set(USE_SYSTEM_CURL ON)
 add_subdirectory(deps/cpr)
 
-add_executable(gfytube_render ${SOURCE_FILES})
+add_executable(gfytube-cli ${SOURCE_FILES})
 
 include_directories(${CPR_INCLUDE_DIRS})
 include_directories(deps/libdash/libdash/libdash/include)
 
-target_link_libraries(gfytube_render ${CPR_LIBRARIES})
+target_link_libraries(gfytube-cli ${CPR_LIBRARIES})

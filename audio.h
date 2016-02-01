@@ -16,6 +16,7 @@
 
 #include <string>
 #include <sys/stat.h>
+#include <thread>
 
 #include "json.hpp"
 
@@ -28,12 +29,16 @@ public:
     Audio();
     ~Audio();
 
-    void download(std::string url);
-    void convert(std::string filename);
-    void extractMetadata(std::string filename);
+    std::string download(std::string url);
+    std::string convert(std::string filename);
+    std::string seek(std::string filename, std::string seek);
+    std::string extractMetadata(std::string filename);
 private:
     std::string extractSignature(std::string url, std::string testString);
     CURL *curl = curl_easy_init();
+    std::string convertToMp3(std::string filename);
+    std::string convertToAac(std::string filename);
+    std::string convertToOpus(std::string filename);
 };
 
 #endif //GFYTUBE_RENDER_AUDIO_H

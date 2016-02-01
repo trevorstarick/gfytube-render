@@ -26,12 +26,15 @@ class Video : public Helpers {
     public:
         Video();
         ~Video();
-        void download(std::string url);
-        void convert(std::string filename);
-        void extractMetadata(std::string filename);
-
+    std::string download(std::string url);
+    std::string convert(std::string filename);
+    std::string extractMetadata(std::string filename);
+    std::string thumbnail(std::string filename);
+    std::string loop(std::string filename, int loopCount);
 private:
     CURL *curl = curl_easy_init();
+    std::string convertToWebm(std::string filename);
+    std::string convertToMp4(std::string filename);
 };
 
 #endif //GFYTUBE_RENDER_VIDEO_H

@@ -9,7 +9,6 @@ Video::~Video() {};
 
 std::string extractSignature(std::string url, std::string testString) {
     url = "https:" + url.substr(1, url.length()-2);
-    std::cout << url << "\n";
 
     auto r = cpr::Get(cpr::Url(url));
 
@@ -96,23 +95,16 @@ std::string extractSignature(std::string url, std::string testString) {
 
 }
 
-void Video::download(std::string url) {
+std::string Video::download(std::string url) {
     std::string name = split(url, "/").back();
-    auto tmp = split(name, "\\.").back();
-    tmp = split(tmp, "?")[0];
-    name = name.substr(0, name.length()-tmp.length());
-    name += md5(url);
-    name += "." + tmp;
+    name = split(name, "\\?")[0];
 
     struct stat buffer;
 
     auto path = pwd + name;
 
     if(stat (path.c_str(), &buffer) == 0) {
-        std::cout << "old " << url << "\n";
-        return;
-    } else {
-        std::cout << "new " << url << "\n";
+        return "";
     }
 
     auto r = cpr::Head(cpr::Url(url));
@@ -120,22 +112,18 @@ void Video::download(std::string url) {
     std::regex re;
 
     if(r.status_code != 200) {
-        std::cerr << "Path: " << url << " returned status code " << r.status_code << "\n";
-        return;
+        std::string err = "Path: " + url + " returned status code " + std::to_string(r.status_code);
+        return err;
     } else {
-        std::cout << r.status_code << "\t" << url << "\t" << r.url << "\n";
-
         re = std::regex("imgur");
         std::regex_search(r.url, m, re);
 
         re = std::regex("removed");
         std::regex_search(r.url, mm, re);
 
-        std::cout << m.size() << " " << mm.size() << "\n";
-
         if(m.size() >= 1 && mm.size() >= 1) {
             std::cerr << "Path: " << url << " is a hidden imgur error.\n";
-            return;
+            return "url is imgur hidden";
         }
 
         url = r.url;
@@ -147,7 +135,76 @@ void Video::download(std::string url) {
     video.open(pwd + name);
     video << r.text;
     video.close();
+
+    return "";
 }
 
-void Video::convert(std::string filename) {}
-void Video::extractMetadata(std::string filename) {}
+std::string Video::convertToMp4(std::string filename) {
+    std::string path = pwd + filename;
+    std::string ext  = split(filename, "\\.").back();
+    std::string name = filename.substr(0, filename.length() - ext.length() - 1);
+
+    std::vector<std::string> args = {
+            "-y",
+            "-v", "error",
+            "-i", path,
+            "-c:v", "libx264",
+            "-pix_fmt yuv420p",
+            "-b:v", "500K",
+            "-vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\"",
+            "-threads", "0",
+            "-an",
+            pwd + "video/" + name + ".mp4"
+    };
+
+    std::string argsString = "";
+
+    for(auto x:args) {
+        argsString += " ";
+        argsString += x;
+    }
+
+    std::string cmd = "ffmpeg";
+    cmd += argsString;
+
+    exec(cmd.c_str());
+
+    return "";
+}
+
+std::string Video::convert(std::string filename) {
+
+//    std::thread t1(&Video::convertToWebm, this, filename);
+    std::thread t2(&Video::convertToMp4, this, filename);
+
+//    t1.join();
+    t2.join();
+
+    return "";
+}
+
+std::string Video::loop(std::string filename, int loopCount) {
+    std::string concatStr = "";
+
+    for(int i = 0; i < loopCount; i++) {
+        concatStr += "file '" + pwd + "video/" + filename + ".mp4'\n";
+    }
+
+    std::ofstream file;
+    file.open(pwd + "tmp/" + filename + ".txt");
+    file << concatStr;
+    file.close();
+
+    std::string cmd = "ffmpeg";
+    cmd += " -y";
+    cmd += " -v error";
+    cmd += " -f concat";
+    cmd += " -i ";
+    cmd += pwd + "tmp/" + filename + ".txt";
+    cmd += " -c copy ";
+    cmd += pwd + "tmp/" + filename + ".mp4";
+
+    exec(cmd.c_str());
+
+    return "";
+}
