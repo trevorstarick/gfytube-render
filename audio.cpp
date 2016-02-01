@@ -204,4 +204,4 @@ std::string Audio::seek(std::string filename, std::string seek) {
     exec(cmd.c_str());
 
     return "";
-};
+}
