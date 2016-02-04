@@ -132,7 +132,7 @@ std::string Video::download(std::string url) {
     r = cpr::Get(cpr::Url(url));
 
     std::ofstream video;
-    video.open(pwd + name);
+    video.open(pwd + "tmp/" + name);
     video << r.text;
     video.close();
 
@@ -140,7 +140,7 @@ std::string Video::download(std::string url) {
 }
 
 std::string Video::convertToMp4(std::string filename) {
-    std::string path = pwd + filename;
+    std::string path = pwd + "tmp/" + filename;
     std::string ext  = split(filename, "\\.").back();
     std::string name = filename.substr(0, filename.length() - ext.length() - 1);
 

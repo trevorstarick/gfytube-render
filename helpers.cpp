@@ -14,7 +14,17 @@ void Helpers::init() {
     struct stat st = {0};
     std::string path = "";
 
-    path = pwd + "gfytube";
+    char cCurrentPath[FILENAME_MAX];
+    if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) {
+        return;
+    }
+
+    cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
+
+    pwd = cCurrentPath;
+    pwd += "/";
+
+    path = pwd + "data";
     if (stat(path.c_str(), &st) == -1) mkdir(path.c_str(), 0700);
 
     pwd = path + "/";
@@ -29,6 +39,9 @@ void Helpers::init() {
     if (stat(path.c_str(), &st) == -1) mkdir(path.c_str(), 0700);
 
     path = pwd + "media";
+    if (stat(path.c_str(), &st) == -1) mkdir(path.c_str(), 0700);
+
+    path = pwd + "thumbnails";
     if (stat(path.c_str(), &st) == -1) mkdir(path.c_str(), 0700);
 }
 
@@ -66,6 +79,11 @@ float Helpers::getMediaLength(std::string filename) {
     return std::stof(i);
 }
 
+std::string Helpers::generateThumbnail(std::string filename) {
+    auto cmd = "ffmpeg -i " + pwd + "media/" + filename + ".mp4 -y -v error -an -ss 0 -vframes 1 " + pwd + "thumbnails/" + filename + ".png";
+    exec(cmd.c_str());
+    return "";
+}
 
 std::string Helpers::mergeAV(std::string start, std::string audio, std::string video) {
     std::string audioPath = pwd + "tmp/" + audio;
@@ -105,7 +123,5 @@ std::string Helpers::mergeAV(std::string start, std::string audio, std::string v
 
     exec(cmd.c_str());
 
-    std::cout << filename << "\n";
-
-    return "";
+    return filename;
 }

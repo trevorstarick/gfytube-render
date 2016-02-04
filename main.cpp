@@ -2,6 +2,9 @@
 
 #include "helpers.h"
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #include "audio.h"
 #include "video.h"
 
@@ -34,6 +37,9 @@ void fetch(std::map<std::string, std::string> queryString) {
     std::string af = "";
     std::string vf = "";
 
+    std::string videoSource = queryString["gif"];
+    std::string audioSource = queryString["v"];
+
     af = audio.download(queryString["v"]);
     vf = video.download(queryString["gif"]);
 
@@ -55,7 +61,8 @@ void fetch(std::map<std::string, std::string> queryString) {
 
     queryString["gif"] = helpers.split(queryString["gif"], "\\.")[0];
 
-    af = audio.seek(queryString["v"], queryString["s"]);
+    audio.seek(queryString["v"], queryString["s"]);
+
     auto audioLength = helpers.getMediaLength(pwd + "tmp/" + queryString["v"] + ".m4a");
     auto videoLength = helpers.getMediaLength(pwd + "video/" + queryString["gif"] + ".mp4");
 
@@ -69,7 +76,23 @@ void fetch(std::map<std::string, std::string> queryString) {
 
     video.loop(queryString["gif"], loop);
 
-    helpers.mergeAV(queryString["s"], queryString["v"], queryString["gif"]);
+    auto hash = helpers.mergeAV(queryString["s"], queryString["v"], queryString["gif"]);
+    std::cout << hash << "\n";
+    helpers.generateThumbnail(hash);
+
+    json body;
+
+    body["video"] = videoSource;
+    body["audio"] = audioSource;
+    body["loops"] = loop;
+    body["seek"]  = queryString["s"];
+    body["nsfw"]  = queryString["n"];
+
+    cpr::Post(
+            cpr::Url{"https://api.gfytu.be/" + hash},
+            cpr::Body{body.dump()},
+            cpr::Header{{"Content-Type", "application/json"}}
+    );
 }
 
 void importFromGifsound(std::string url) {
@@ -103,7 +126,10 @@ void importFromGifsound(std::string url) {
         queryString["gif"] = "i.imgur.com/" + queryString["gifv"] + ".webm";
     } else if(queryString.find("gfycat") != queryString.end()) {
         // gfycat lookup
-        queryString["gif"] = "http://gfycat.com/cajax/get/" + queryString["gfycat"];
+        queryString["gif"] = "http://giant.gfycat.com/" + queryString["gfycat"] + ".mp4";
+    } else if(queryString.find("mp4") != queryString.end()) {
+        // mp4 lookup
+        queryString["gif"] = queryString["mp4"] + ".mp4";
     } else {
         // throw error
         exit(2);
@@ -189,7 +215,6 @@ int main(int argc, char* argv[]) {
                 return 0;
             }
 
-
             if(key == "v") {
                 key = "gif";
                 value = helpers.replace(value, "gifv", "gif");
@@ -217,14 +242,13 @@ int main(int argc, char* argv[]) {
     } else if(queryString.find("v") == queryString.end()) {
         std::cerr << "Missing audio url!" << "\n";
         return 402;
-    } else if(queryString.find("l") == queryString.end()) {
-        std::cerr << "Missing loop count!" << "\n";
-    } else if(queryString.find("s") == queryString.end()) {
-        std::cerr << "Missing audio seek!" << "\n";
-    } else if(queryString.find("n") == queryString.end()) {
-        std::cerr << "Missing nsfw flag!" << "\n";
-    } else {
-        fetch(queryString);
-        return 0;
     }
+
+    if(queryString.find("l") == queryString.end()) {
+    } else if(queryString.find("s") == queryString.end()) {
+        queryString["s"] = "0";
+    } else if(queryString.find("n") == queryString.end()) { }
+
+    fetch(queryString);
+    return 0;
 }
